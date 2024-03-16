@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use Laravel\Sanctum\HasApiTokens;
 
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\SignupRequest;
@@ -38,10 +39,22 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
         return response(compact('user', 'token', 'errors'));
     }
-    public function logout(Request $request) {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
-        $user->tokens()->where('id', $user->currentAccessToken()->id)->delete();
-        return response('', 204);
+    public function logout(Request $request)
+    {
+        $user = Auth::user();
+    
+        if (!$user) {
+            return response()->json(['message' => 'User not authenticated'], 401);
+        }
+    
+        $accessToken = $request->user()->currentAccessToken();
+    
+        if (!$accessToken) {
+            return response()->json(['message' => 'User does not have an access token'], 400);
+        }
+    
+        $accessToken->delete();
+    
+        return response()->json(['message' => 'Logged out successfully'], 204);
     }
 }
